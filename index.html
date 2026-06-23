@@ -15,6 +15,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 header{background:var(--accent);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:5}
 header h1{margin:0;font-size:1.3rem;display:flex;align-items:center;gap:8px}
 header p{margin:4px 0 0;font-size:.82rem;opacity:.9}
+header .help-link{color:#fff;font-size:.82rem;text-decoration:underline;display:inline-block;margin-top:8px}
 main{max-width:680px;margin:0 auto;padding:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
   padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
@@ -54,6 +55,7 @@ footer{text-align:center;font-size:.74rem;color:var(--muted);padding:20px}
 <header>
   <h1>🥗 Cuisine</h1>
   <p>Recettes du jour adaptées à votre frigo & votre cœur</p>
+  <a class="help-link" href="aide.html">❓ Comment utiliser l'app ?</a>
 </header>
 
 <main>
@@ -107,132 +109,6 @@ footer{text-align:center;font-size:.74rem;color:var(--muted);padding:20px}
 
 <footer>Cuisine v1 · fonctionne hors-ligne</footer>
 
-<script>
-// Base de recettes simple. tags: heart=adapté cœur. unhealthyFor: filtre.
-const RECIPES = [
-  {n:"Poulet rôti citron & légumes verts", base:["poulet"], ing:["poulet","citron","courgette","huile d'olive","ail","thym"], t:["heart","leger"], time:35, type:["poulet"], steps:"Enrober le poulet d'huile d'olive, citron, ail et thym. Rôtir 30 min avec les courgettes."},
-  {n:"Saumon vapeur & épinards", base:["saumon","poisson"], ing:["saumon","épinards","citron","huile d'olive","poivre"], t:["heart","leger","poisson"], time:25, type:["poisson"], steps:"Cuire le saumon à la vapeur 12 min. Faire tomber les épinards à l'huile d'olive, citron."},
-  {n:"Salade de pois chiches & tomates", base:["pois chiches","tomates"], ing:["pois chiches","tomates","concombre","oignon rouge","huile d'olive","citron","persil"], t:["heart","veggie","leger","rapide"], time:15, type:["veggie"], steps:"Mélanger pois chiches égouttés, tomates, concombre, oignon. Assaisonner huile d'olive et citron."},
-  {n:"Omelette aux herbes & courgette", base:["œufs","oeufs"], ing:["œufs","courgette","persil","huile d'olive","poivre"], t:["heart","veggie","rapide","leger"], time:15, type:["veggie"], steps:"Râper la courgette, la faire revenir, ajouter les œufs battus aux herbes."},
-  {n:"Curry de lentilles épicé", base:["lentilles"], ing:["lentilles","tomates","oignon","ail","gingembre","curcuma","cumin","huile d'olive"], t:["heart","veggie","epice"], time:40, type:["veggie"], steps:"Faire revenir oignon, ail, gingembre et épices. Ajouter lentilles et tomates, mijoter 30 min."},
-  {n:"Riz sauté aux légumes", base:["riz"], ing:["riz","courgette","carotte","petits pois","huile d'olive","ail","sauce soja"], t:["veggie","rapide","comfort"], time:25, type:["veggie"], steps:"Faire sauter les légumes, ajouter le riz cuit et un trait de sauce soja."},
-  {n:"Cabillaud aux tomates & olives", base:["cabillaud","poisson"], ing:["cabillaud","tomates","olives","ail","huile d'olive","origan"], t:["heart","poisson","leger"], time:30, type:["poisson"], steps:"Faire mijoter tomates, ail, origan. Déposer le cabillaud dessus et cuire 12 min."},
-  {n:"Soupe de légumes maison", base:["légumes","poireau","carotte"], ing:["carotte","poireau","pomme de terre","oignon","huile d'olive","persil"], t:["heart","veggie","leger","comfort"], time:40, type:["veggie"], steps:"Couper les légumes, couvrir d'eau, mijoter 30 min, mixer."},
-  {n:"Poêlée poulet & brocoli", base:["poulet","brocoli"], ing:["poulet","brocoli","ail","gingembre","huile d'olive","sauce soja"], t:["heart","rapide"], time:25, type:["poulet"], steps:"Saisir le poulet, ajouter brocoli, ail, gingembre, finir à la sauce soja."},
-  {n:"Pâtes complètes tomates basilic", base:["pâtes","pates","tomates"], ing:["pâtes complètes","tomates","ail","basilic","huile d'olive"], t:["veggie","rapide","comfort","heart"], time:20, type:["veggie"], steps:"Cuire les pâtes. Préparer une sauce tomate ail-basilic à l'huile d'olive."},
-  {n:"Chili végétarien doux", base:["haricots rouges"], ing:["haricots rouges","tomates","poivron","oignon","maïs","cumin","paprika"], t:["veggie","epice","comfort","heart"], time:35, type:["veggie"], steps:"Faire revenir oignon et poivron, ajouter haricots, tomates, maïs et épices, mijoter."},
-  {n:"Truite & purée de patate douce", base:["truite","poisson"], ing:["truite","patate douce","huile d'olive","citron","ciboulette"], t:["heart","poisson","leger"], time:35, type:["poisson"], steps:"Cuire la truite au four. Écraser la patate douce cuite avec un filet d'huile d'olive."}
-];
-
-const sel = (id)=>document.getElementById(id);
-function setupChips(id){
-  sel(id).querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>c.classList.toggle('on')));
-}
-setupChips('prefs'); setupChips('sante');
-function getOn(id){return [...sel(id).querySelectorAll('.chip.on')].map(c=>c.dataset.v);}
-
-function parseFrigo(){
-  return sel('frigo').value.toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
-}
-
-function score(r, frigo, prefs, sante){
-  let s=0;
-  // ingrédients du frigo présents
-  frigo.forEach(f=>{ if(r.ing.some(i=>i.includes(f)||f.includes(i))) s+=3; });
-  // préférences
-  prefs.forEach(p=>{
-    if(r.t.includes(p)) s+=2;
-    if(p==='rapide' && r.time<=30) s+=1;
-  });
-  if(prefs.includes('veggie') && !r.type.includes('veggie')) s-=10;
-  if(prefs.includes('poisson') && r.type.includes('poisson')) s+=2;
-  // santé
-  if(sante.length && r.t.includes('heart')) s+=4;
-  if(sante.includes('sansel') && r.t.includes('heart')) s+=1;
-  return s;
-}
-
-sel('go').addEventListener('click',()=>{
-  const frigo=parseFrigo();
-  const prefs=getOn('prefs');
-  const sante=getOn('sante');
-  const jours=parseInt(sel('jours').value);
-
-  let ranked=RECIPES
-    .map(r=>({r,sc:score(r,frigo,prefs,sante)}))
-    .filter(x=>x.sc>-5)
-    .sort((a,b)=>b.sc-a.sc);
-
-  if(ranked.length===0){
-    alert("Aucune recette ne correspond. Essayez d'élargir vos préférences.");
-    return;
-  }
-
-  // sélection variée
-  let chosen=[];
-  let pool=ranked.map(x=>x.r);
-  for(let i=0;i<jours;i++){
-    if(pool.length===0) pool=ranked.map(x=>x.r);
-    chosen.push(pool.shift());
-  }
-
-  renderRecipes(chosen, frigo);
-  renderShop(chosen, frigo);
-  sel('resultCard').style.display='block';
-  sel('shopCard').style.display='block';
-  sel('resultCard').scrollIntoView({behavior:'smooth'});
-});
-
-const DAYS=["Jour 1","Jour 2","Jour 3","Jour 4","Jour 5","Jour 6","Jour 7"];
-function renderRecipes(list, frigo){
-  const box=sel('recipes'); box.innerHTML='';
-  list.forEach((r,i)=>{
-    const tags=r.t.map(t=>{
-      const map={heart:'❤️ Cœur',leger:'Léger',veggie:'Veggie',rapide:'Rapide',poisson:'Poisson',epice:'Épicé',comfort:'Réconfort'};
-      const cls=t==='heart'?'tag heart':'tag';
-      return map[t]?`<span class="${cls}">${map[t]}</span>`:'';
-    }).join('');
-    const ings=r.ing.map(ing=>{
-      const have=frigo.some(f=>ing.includes(f)||f.includes(ing));
-      return `<li>${ing}${have?' ✅':''}</li>`;
-    }).join('');
-    box.insertAdjacentHTML('beforeend',`
-      <div class="recipe">
-        <div class="day">${DAYS[i]||('Jour '+(i+1))}</div>
-        <h3>${r.n}</h3>
-        <div class="tags">${tags}<span class="tag">${r.time} min</span></div>
-        <ul>${ings}</ul>
-        <div class="steps"><strong>Préparation :</strong> ${r.steps}</div>
-      </div>`);
-  });
-}
-
-function renderShop(list, frigo){
-  const need={};
-  list.forEach(r=>r.ing.forEach(ing=>{
-    const have=frigo.some(f=>ing.includes(f)||f.includes(ing));
-    if(!have) need[ing]=true;
-  }));
-  const items=Object.keys(need).sort();
-  const ul=sel('shop'); ul.innerHTML='';
-  if(items.length===0){
-    ul.innerHTML='<li class="empty">Vous avez déjà tout ! 🎉</li>';
-    return;
-  }
-  items.forEach(it=>{
-    const li=document.createElement('li');
-    li.innerHTML=`<label><input type="checkbox"><span>${it}</span></label>`;
-    const cb=li.querySelector('input'), sp=li.querySelector('span');
-    cb.addEventListener('change',()=>sp.classList.toggle('done',cb.checked));
-    ul.appendChild(li);
-  });
-}
-
-sel('reset').addEventListener('click',()=>{
-  sel('resultCard').style.display='none';
-  sel('shopCard').style.display='none';
-  window.scrollTo({top:0,behavior:'smooth'});
-});
-</script>
+<script src="recettes.js"></script>
 </body>
 </html>

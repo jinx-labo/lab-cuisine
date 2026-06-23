@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aide — Cuisine</title>
+<style>
+:root{
+  --bg:#f6f7f4; --card:#fff; --ink:#23291f; --muted:#7a8472;
+  --accent:#3f8e5b; --accent2:#e8f3ea; --line:#e3e6dd; --warn:#c0492f;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.5}
+header{background:var(--accent);color:#fff;padding:18px 16px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:1.3rem;display:flex;align-items:center;gap:8px}
+header p{margin:4px 0 0;font-size:.82rem;opacity:.9}
+main{max-width:680px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+h2{font-size:1rem;margin:0 0 12px;color:var(--accent)}
+p,li{font-size:.92rem}
+ol,ul{padding-left:22px}
+li{margin:6px 0}
+.notice{background:#ffece7;border:1px solid #f3c8bd;color:var(--warn);
+  padding:10px 12px;border-radius:10px;font-size:.82rem;margin-top:10px}
+.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
+  color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px;text-align:center;text-decoration:none}
+footer{text-align:center;font-size:.74rem;color:var(--muted);padding:20px}
+</style>
+</head>
+<body>
+<header>
+  <h1>❓ Aide</h1>
+  <p>Comment utiliser le générateur de recettes</p>
+</header>
+
+<main>
+  <div class="card">
+    <h2>En quelques étapes</h2>
+    <ol>
+      <li><strong>Remplissez votre frigo :</strong> listez les ingrédients dont vous disposez, séparés par des virgules (ex. <em>poulet, courgette, riz, tomates</em>). Plus la liste est complète, plus les suggestions sont pertinentes.</li>
+      <li><strong>Choisissez vos préférences :</strong> touchez les étiquettes (Végétarien, Rapide, Léger, Épicé, Plutôt poisson, Réconfortant) pour les activer ou les désactiver.</li>
+      <li><strong>Réglez la santé cardiaque :</strong> le mode « Bon pour le cœur » est activé par défaut. Vous pouvez aussi viser « Sans sel ajouté » ou « Pauvre en graisses ».</li>
+      <li><strong>Indiquez le nombre de jours</strong> à planifier (1, 3, 5 ou 7).</li>
+      <li><strong>Générez vos recettes :</strong> appuyez sur « Générer mes recettes ». L'app propose un plan varié et calcule votre liste de courses.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Vos résultats</h2>
+    <ul>
+      <li>Chaque recette affiche ses étiquettes, son temps de préparation et ses ingrédients. Un ✅ signale les ingrédients déjà dans votre frigo.</li>
+      <li>La <strong>liste de courses</strong> regroupe uniquement ce qui vous manque. Cochez les articles au fur et à mesure de vos achats.</li>
+      <li>Le bouton « Recommencer » remet la page à zéro pour une nouvelle génération.</li>
+    </ul>
+    <div class="notice">❤️ Le mode « bon pour le cœur » privilégie peu de sel, de bons gras (huile d'olive), des légumes et des poissons gras.</div>
+  </div>
+
+  <div class="card">
+    <h2>Bon à savoir</h2>
+    <p>L'application fonctionne entièrement hors-ligne : aucune donnée n'est envoyée. N'hésitez pas à expérimenter avec différentes combinaisons d'ingrédients et de préférences.</p>
+  </div>
+
+  <a class="btn" href="index.html">⬅️ Retour à l'accueil</a>
+</main>
+
+<footer>Cuisine v1 · fonctionne hors-ligne</footer>
+</body>
+</html>
