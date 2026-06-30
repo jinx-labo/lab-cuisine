@@ -30,15 +30,19 @@ textarea{resize:vertical;min-height:60px}
 .chip.on{background:var(--accent2);border-color:var(--accent);color:var(--accent);font-weight:600}
 .btn{width:100%;padding:14px;border:none;border-radius:12px;background:var(--accent);
   color:#fff;font-size:1rem;font-weight:700;cursor:pointer;margin-top:14px}
-.btn:active{transform:translatescale(.99);opacity:.9}
+.btn:active{transform:scale(.99);opacity:.9}
 .btn.sec{background:#fff;color:var(--accent);border:1.5px solid var(--accent)}
-.recipe{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fcfdfb}
-.recipe h3{margin:0 0 4px;font-size:1.05rem}
+.recipe{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fcfdfb;position:relative}
+.recipe h3{margin:0 0 4px;font-size:1.05rem;padding-right:34px}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
 .tag{font-size:.7rem;padding:3px 9px;border-radius:12px;background:var(--accent2);color:var(--accent);font-weight:600}
 .tag.heart{background:#ffece7;color:var(--warn)}
 .recipe ul{margin:8px 0;padding-left:20px;font-size:.9rem}
 .recipe .steps{font-size:.9rem;color:#3c4534}
+.recipe .portions{font-size:.78rem;color:var(--muted);margin-bottom:4px}
+.fav-btn{position:absolute;top:12px;right:12px;background:none;border:none;
+  font-size:1.35rem;cursor:pointer;line-height:1;padding:0;width:auto;margin:0;opacity:.55}
+.fav-btn.on{opacity:1}
 .day{font-weight:700;color:var(--accent);font-size:.8rem;letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px}
 .shop li{font-size:.92rem}
 .shop label{display:flex;align-items:center;gap:8px;font-weight:400;color:var(--ink);margin:6px 0;cursor:pointer}
@@ -81,6 +85,14 @@ footer{text-align:center;font-size:.74rem;color:var(--muted);padding:20px}
     </div>
     <div class="notice">❤️ Le mode « bon pour le cœur » privilégie peu de sel, bons gras (huile d'olive), légumes et poissons gras.</div>
 
+    <label>Nombre de portions</label>
+    <select id="portions">
+      <option value="1">1 personne</option>
+      <option value="2" selected>2 personnes</option>
+      <option value="4">4 personnes</option>
+      <option value="6">6 personnes</option>
+    </select>
+
     <label>Nombre de jours à planifier</label>
     <select id="jours">
       <option value="1">1 jour</option>
@@ -90,6 +102,11 @@ footer{text-align:center;font-size:.74rem;color:var(--muted);padding:20px}
     </select>
 
     <button class="btn" id="go">Générer mes recettes</button>
+  </div>
+
+  <div class="card" id="favCard" style="display:none">
+    <h2>⭐ Mes favoris</h2>
+    <div id="favorites"></div>
   </div>
 
   <div class="card" id="resultCard" style="display:none">
@@ -131,6 +148,30 @@ function setupChips(id){
 setupChips('prefs'); setupChips('sante');
 function getOn(id){return [...sel(id).querySelectorAll('.chip.on')].map(c=>c.dataset.v);}
 
+// --- Favoris (persistés en localStorage) ---
+const FAV_KEY='cuisine_favoris';
+function loadFavs(){
+  try{ return JSON.parse(localStorage.getItem(FAV_KEY))||[]; }catch(e){ return []; }
+}
+function saveFavs(list){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){}
+}
+let favs=loadFavs();
+function isFav(name){ return favs.includes(name); }
+function toggleFav(name){
+  if(isFav(name)) favs=favs.filter(n=>n!==name);
+  else favs.push(name);
+  saveFavs(favs);
+  renderFavorites();
+  // resynchroniser les boutons des recettes affichées
+  document.querySelectorAll('.fav-btn[data-name]').forEach(b=>{
+    const on=isFav(b.dataset.name);
+    b.classList.toggle('on',on);
+    b.textContent=on?'★':'☆';
+    b.title=on?'Retirer des favoris':'Ajouter aux favoris';
+  });
+}
+
 function parseFrigo(){
   return sel('frigo').value.toLowerCase().split(',').map(s=>s.trim()).filter(Boolean);
 }
@@ -157,6 +198,7 @@ sel('go').addEventListener('click',()=>{
   const prefs=getOn('prefs');
   const sante=getOn('sante');
   const jours=parseInt(sel('jours').value);
+  const portions=parseInt(sel('portions').value);
 
   let ranked=RECIPES
     .map(r=>({r,sc:score(r,frigo,prefs,sante)}))
@@ -176,7 +218,7 @@ sel('go').addEventListener('click',()=>{
     chosen.push(pool.shift());
   }
 
-  renderRecipes(chosen, frigo);
+  renderRecipes(chosen, frigo, portions);
   renderShop(chosen, frigo);
   sel('resultCard').style.display='block';
   sel('shopCard').style.display='block';
@@ -184,28 +226,75 @@ sel('go').addEventListener('click',()=>{
 });
 
 const DAYS=["Jour 1","Jour 2","Jour 3","Jour 4","Jour 5","Jour 6","Jour 7"];
-function renderRecipes(list, frigo){
+function recipeTagsHTML(r){
+  return r.t.map(t=>{
+    const map={heart:'❤️ Cœur',leger:'Léger',veggie:'Veggie',rapide:'Rapide',poisson:'Poisson',epice:'Épicé',comfort:'Réconfort'};
+    const cls=t==='heart'?'tag heart':'tag';
+    return map[t]?`<span class="${cls}">${map[t]}</span>`:'';
+  }).join('');
+}
+function renderRecipes(list, frigo, portions){
   const box=sel('recipes'); box.innerHTML='';
   list.forEach((r,i)=>{
-    const tags=r.t.map(t=>{
-      const map={heart:'❤️ Cœur',leger:'Léger',veggie:'Veggie',rapide:'Rapide',poisson:'Poisson',epice:'Épicé',comfort:'Réconfort'};
-      const cls=t==='heart'?'tag heart':'tag';
-      return map[t]?`<span class="${cls}">${map[t]}</span>`:'';
-    }).join('');
+    const tags=recipeTagsHTML(r);
     const ings=r.ing.map(ing=>{
       const have=frigo.some(f=>ing.includes(f)||f.includes(ing));
       return `<li>${ing}${have?' ✅':''}</li>`;
     }).join('');
+    const favOn=isFav(r.n);
+    const portTxt=portions===1?'1 personne':portions+' personnes';
     box.insertAdjacentHTML('beforeend',`
       <div class="recipe">
+        <button class="fav-btn${favOn?' on':''}" data-name="${r.n.replace(/"/g,'&quot;')}" title="${favOn?'Retirer des favoris':'Ajouter aux favoris'}">${favOn?'★':'☆'}</button>
         <div class="day">${DAYS[i]||('Jour '+(i+1))}</div>
+        <h3>${r.n}</h3>
+        <div class="portions">Pour ${portTxt}</div>
+        <div class="tags">${tags}<span class="tag">${r.time} min</span></div>
+        <ul>${ings}</ul>
+        <div class="steps"><strong>Préparation :</strong> ${r.steps}</div>
+      </div>`);
+  });
+  box.querySelectorAll('.fav-btn').forEach(b=>{
+    b.addEventListener('click',()=>toggleFav(b.dataset.name));
+  });
+}
+
+function renderFavorites(){
+  const box=sel('favorites');
+  if(!box) return;
+  if(favs.length===0){
+    sel('favCard').style.display='none';
+    box.innerHTML='';
+    return;
+  }
+  sel('favCard').style.display='block';
+  box.innerHTML='';
+  favs.forEach(name=>{
+    const r=RECIPES.find(x=>x.n===name);
+    if(!r){
+      box.insertAdjacentHTML('beforeend',`
+        <div class="recipe">
+          <button class="fav-btn on" data-name="${name.replace(/"/g,'&quot;')}" title="Retirer des favoris">★</button>
+          <h3>${name}</h3>
+        </div>`);
+      return;
+    }
+    const tags=recipeTagsHTML(r);
+    const ings=r.ing.map(ing=>`<li>${ing}</li>`).join('');
+    box.insertAdjacentHTML('beforeend',`
+      <div class="recipe">
+        <button class="fav-btn on" data-name="${r.n.replace(/"/g,'&quot;')}" title="Retirer des favoris">★</button>
         <h3>${r.n}</h3>
         <div class="tags">${tags}<span class="tag">${r.time} min</span></div>
         <ul>${ings}</ul>
         <div class="steps"><strong>Préparation :</strong> ${r.steps}</div>
       </div>`);
   });
+  box.querySelectorAll('.fav-btn').forEach(b=>{
+    b.addEventListener('click',()=>toggleFav(b.dataset.name));
+  });
 }
+renderFavorites();
 
 function renderShop(list, frigo){
   const need={};
